@@ -1,8 +1,5 @@
 # README
 
-Created By: Sanzhar Nussipbek
-Last Edited: May 18, 2020 1:33 PM
-
 # It's Corona Time Telegram Bot
 
 [@its_corona_time_bot](https://t.me/its_corona_time_bot) is a beta version of a Telegram Bot which will help to get updated real-time data on coronavirus cases from the worldometers page and other important websites, provided by the most reputable organizations and statistical offices in the world. 
