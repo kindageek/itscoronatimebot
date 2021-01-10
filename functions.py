@@ -3,20 +3,32 @@ from datetime import datetime
 from emoji import emojize
 import json
 import manager
+# import urllib to open urls, datetime to get current date, emoji, json libraries and manager.py file
 
+# function to get string formatted number with commas
 def get_str_num(num):
     string = str('{:,}'.format(num))
     return string
 
-
+# function to get the name of the month by its number
 def get_month_name(num):
     months = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
     return months[num]
 
+def getDateTime(longDate):
+    myNumber = float(longDate)
+    return str(datetime.fromtimestamp(myNumber / 1e3).strftime('%d.%m.%Y %H:%M:%S'))
 
+# function to get proper name of the country
+# used when sending country name from API
 def get_proper_name(country_name):
     proper_name = ''
+
+    # lower the country name first
     country_name = country_name.lower()
+
+    # check different cases for unique names
+    # otherwise, split the name by hyphen, and join it to one string, capitalizing the words except several ones
     if country_name == 'us' or country_name == 'usa':
         proper_name = 'USA'
     elif country_name == 'uk':
@@ -42,136 +54,141 @@ def get_proper_name(country_name):
                 proper_name += str_list[i]
             if i != len(str_list)-1:
                 proper_name += ' '
-    
+
     return proper_name
 
 
-def get_dict_name(country_name):
-    dict_name = ''
+# function to get the api name of the country
+# used when user inputs country name and the program needs to use it to access its API data
+def get_api_name(country_name):
+    api_name = ''
+
+    # if the input is list of words, join them with a space beetween
     if type(country_name) is list:
         country_name  = country_name.join(' ').lower()
 
+    # lower the country name
     country_name  = country_name.lower()
 
+    # check different unique cases
+    # otherwise, split the words by space and join them with hyphen
     if country_name == 'usa' or country_name == 'united states of america':
-        dict_name = 'us'
+        api_name = 'us'
     elif country_name == 'kz':
-        dict_name = 'kazakhstan'
+        api_name = 'kazakhstan'
     elif country_name == 'hong kong':
-        dict_name = 'china-hong-kong-sar'
+        api_name = 'china-hong-kong-sar'
     elif country_name == 'macao':
-        dict_name = 'china-macao-sar'
+        api_name = 'china-macao-sar'
     elif country_name == 'vatican' or country_name == 'vatican city':
-        dict_name = 'holy-see'
+        api_name = 'holy-see'
     elif country_name == 'hong kong':
-        dict_name = 'china-hong-kong-sar'
+        api_name = 'china-hong-kong-sar'
     elif country_name == 'eswatini':
-        dict_name = 'swaziland'
+        api_name = 'swaziland'
     elif country_name == 'north macedonia':
-        dict_name = 'macedonia'
+        api_name = 'macedonia'
     else:
-        dict_name = '-'.join(country_name.split(' '))
-    
-    return dict_name
+        api_name = '-'.join(country_name.split(' '))
+
+    return api_name
 
 
+# function to get total statistics from the API
 def get_total():
+    #get data of total statistics from manager.py file
     data = manager.get_all_data()
-    date = '{} {}, {}'.format(get_month_name(datetime.date(datetime.now()).month), str(datetime.date(datetime.now()).day), str(datetime.date(datetime.now()).year))
+
+    # get the current date in formatted string
+    # date = '{} {}, {}'.format(get_month_name(datetime.date(datetime.now()).month), str(datetime.date(datetime.now()).day), str(datetime.date(datetime.now()).year))
+    date = getDateTime(data['updated'])
+
+    # initialize message and add all necessary data
     msg = 'Date: {}'.format(date)
-    msg += '\n\n{}{} {} ({})'.format(emojize(':exclamation:', True),'Total Cases:', get_str_num(data['reports'][0]['cases']), str(data['reports'][0]['table'][0][0]['NewCases']))
-    msg += '\n\n{}{} {} ({})'.format(emojize(':skull:', True),'Total Deaths:', get_str_num(data['reports'][0]['deaths']), str(data['reports'][0]['table'][0][0]['NewDeaths']))
-    msg += '\n\n{}{} {}'.format(emojize(':v:', True),'Total Recovers:', get_str_num(data['reports'][0]['recovered']))
-    
-    total_active_cases = get_str_num(data['reports'][0]['active_cases'][0]['currently_infected_patients'] + data['reports'][0]['active_cases'][0]['inMidCondition'] + data['reports'][0]['active_cases'][0]['criticalStates'])
-    
-    msg += '\n\n{}{} {}'.format(emojize(':mask:', True), 'Total active cases:', get_str_num(data['reports'][0]['active_cases'][0]['currently_infected_patients']))
-    msg += '\n\n{}{} {}'.format(emojize('       :small_red_triangle:', True), 'In mid condition:', get_str_num(data['reports'][0]['active_cases'][0]['inMidCondition']))
-    msg += '\n\n{}{} {}'.format(emojize('       :small_red_triangle:', True), 'Critical states:', get_str_num(data['reports'][0]['active_cases'][0]['criticalStates']))
-    
-    msg += '\n\n{}{} {}'.format(emojize(':lock:', True), 'Total closed cases:',  get_str_num(data['reports'][0]['closed_cases'][0]['cases_which_had_an_outcome']))
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':exclamation:', True),'Cases:', get_str_num(data['cases']), get_str_num(data['todayCases']))
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':skull:', True),'Deaths:', get_str_num(data['deaths']), get_str_num(data['todayDeaths']))
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':v:', True),'Recovered:', get_str_num(data['recovered']), get_str_num(data['todayRecovered']))
+
+    msg += '\n\n{} {} {}'.format(emojize(':mask:', True), 'Active cases:', get_str_num(data['active']))
+    msg += '\n\n{} {} {}'.format(emojize('       :small_red_triangle:', True), 'Critical:', get_str_num(data['critical']))
+
+    msg += '\n\n{} {} {}'.format(emojize(':chart_with_upwards_trend:', True), 'World population:',  get_str_num(data['population']))
     msg += '\n\nSource: www.worldometers.info'
     # print(msg)
     return msg
 
 
+# function to get the data for the country with the largest number of cases of COVID-19
 def get_top():
-    data = manager.get_all_data()
-    date = '{} {}, {}'.format(get_month_name(datetime.date(datetime.now()).month), str(datetime.date(datetime.now()).day), str(datetime.date(datetime.now()).year))
+    #get data of top statistics from manager.py file
+    data = manager.get_top_data()
+
+    # get the current date in formatted string
+    date = getDateTime(data['updated'])
+
+    # initialize message and add all necessary data
     msg = 'Date: {}'.format(date)
-    msg += '\n\n{}{} {}'.format(emojize(':round_pushpin:', True), 'Country:', get_proper_name(data['reports'][0]['table'][0][1]['Country']))
-    msg += '\n\n{}{} {} ({})'.format(emojize(':exclamation:', True), 'Total Cases:', (data['reports'][0]['table'][0][1]['TotalCases']),(data['reports'][0]['table'][0][1]['NewCases']))
-    msg += '\n\n{}{} {} ({})'.format(emojize(':skull:', True), 'Total Deaths:', (data['reports'][0]['table'][0][1]['TotalDeaths']), (data['reports'][0]['table'][0][1]['NewDeaths']))
-    msg += '\n\n{}{} {}'.format(emojize(':v:', True), 'Total Recovers:', (data['reports'][0]['table'][0][1]['TotalRecovered']))
-    msg += '\n\n{}{} {}'.format(emojize(':mask:', True), 'Active Cases:', (data['reports'][0]['table'][0][1]['ActiveCases']))
-    msg += '\n\n{}{} {}'.format(emojize(':chart_with_upwards_trend:', True), 'Population:', (data['reports'][0]['table'][0][1]['Population']))
-    msg += '\n\n{}{} {}'.format(emojize(':syringe:', True), 'Total Tests:', (data['reports'][0]['table'][0][1]['TotalTests']))
+    msg += '\n\n{} {} {} ({})'.format(emojize(':round_pushpin:', True), 'Country:', get_proper_name(data['country']), data['continent'])
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':exclamation:', True), 'Cases:', get_str_num(data['cases']), get_str_num(data['todayCases']))
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':skull:', True), 'Deaths:', get_str_num(data['deaths']), get_str_num(data['todayDeaths']))
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':v:', True), 'Recovered:', get_str_num(data['recovered']), get_str_num(data['todayRecovered']))
+    msg += '\n\n{} {} {}'.format(emojize(':mask:', True), 'Active Cases:', get_str_num(data['active']))
+    msg += '\n\n{} {} {}'.format(emojize('       :small_red_triangle:', True), 'Critical:', get_str_num(data['critical']))
+    msg += '\n\n{} {} {}'.format(emojize(':chart_with_upwards_trend:', True), 'Population:', get_str_num(data['population']))
+    msg += '\n\n{} {} {}'.format(emojize(':syringe:', True), 'Tests:', get_str_num(data['tests']))
+    msg += '\n\n{} {} {}'.format(emojize(':pushpin:', True), 'Flag:', data['countryInfo']['flag'])
     msg += '\n\nSource: www.worldometers.info'
     # print(msg)
     return msg
 
 
+# function to get statistics for the specific country
 def get_country(country_name):
-    country_name = get_dict_name(country_name)
 
+    # get api name of the country
+    country_name = get_api_name(country_name)
+
+    # if the country name is not in the list of available countries, return error message
     if not manager.in_countries(country_name):
         return emojize(':anger: ', True) + 'Incorrect input. Please try again!'
-    
-    
+
+    # get the data for the country from manager.py file
     data = manager.get_country_data(country_name)
 
-    date = '{} {}, {}'.format(get_month_name(datetime.date(datetime.now()).month), str(datetime.date(datetime.now()).day), str(datetime.date(datetime.now()).year))
+    # get the current date in formatted string
+    date = getDateTime(data['updated'])
+
+    # initialize message and add all necessary data
     msg = 'Date: {}'.format(date)
-    
-    if data['report']['country'] is not None: 
-        msg += '\n\n{}{} {}'.format(emojize(':round_pushpin:', True), 'Country:', get_proper_name(data['report']['country']))
-    
-    if data['report']['cases'] is not None: 
-        msg += '\n\n{}{} {}'.format(emojize(':exclamation:', True), 'Cases:', get_str_num(data['report']['cases']))
-    
-    if data['report']['deaths'] is not None: 
-        msg += '\n\n{}{} {}'.format(emojize(':skull:', True), 'Deaths:', get_str_num(data['report']['deaths']))
-    
-    if data['report']['recovered'] is not None: 
-        msg += '\n\n{}{} {}'.format(emojize(':v:', True), 'Recovers:', get_str_num(data['report']['recovered']))
-    
-    if len(data['report']['active_cases']) != 0:
-        active = 0 
-        midCondition = 0 
-        critical = 0
-        
-        if data['report']['active_cases'][0]['currently_infected_patients'] is not None:
-            active = data['report']['active_cases'][0]['currently_infected_patients']
-        if data['report']['active_cases'][0]['inMidCondition'] is not None:
-            midCondition = data['report']['active_cases'][0]['inMidCondition']
-        if data['report']['active_cases'][0]['criticalStates'] is not None:
-            critical = data['report']['active_cases'][0]['criticalStates']
-        
-        msg += '\n\n{}{} {}'.format(emojize(':mask:', True), 'Active cases: ', get_str_num(active))
-        
-        if midCondition != 0:
-            msg += '\n\n{}{} {}'.format(emojize('       :chart_with_upwards_trend:', True), 'In mid condition: ', get_str_num(midCondition))
-        else:
-            msg += '\n\n{}{} {}'.format(emojize('       :chart_with_upwards_trend:', True), 'In mid condition: N/A')
-        
-        if critical != 0:
-            msg += '\n\n{}{} {}'.format(emojize('       :chart_with_upwards_trend:', True), 'Critical states: ', get_str_num(critical))
-        else:
-            msg += '\n\n{}{}'.format(emojize('       :chart_with_upwards_trend:', True), 'Critical states: N/A')
-    
+    msg += '\n\n{} {} {} ({})'.format(emojize(':round_pushpin:', True), 'Country:', get_proper_name(data['country']), data['continent'])
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':exclamation:', True), 'Cases:', get_str_num(data['cases']), get_str_num(data['todayCases']))
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':skull:', True), 'Deaths:', get_str_num(data['deaths']), get_str_num(data['todayDeaths']))
+    msg += '\n\n{} {} {} (+{})'.format(emojize(':v:', True), 'Recovered:', get_str_num(data['recovered']), get_str_num(data['todayRecovered']))
+    msg += '\n\n{} {} {}'.format(emojize(':mask:', True), 'Active Cases:', get_str_num(data['active']))
+    msg += '\n\n{} {} {}'.format(emojize('       :small_red_triangle:', True), 'Critical:', get_str_num(data['critical']))
+    msg += '\n\n{} {} {}'.format(emojize(':chart_with_upwards_trend:', True), 'Population:', get_str_num(data['population']))
+    msg += '\n\n{} {} {}'.format(emojize(':syringe:', True), 'Tests:', get_str_num(data['tests']))
+    msg += '\n\n{} {} {}'.format(emojize(':pushpin:', True), 'Flag:', data['countryInfo']['flag'])
     msg += '\n\nSource: www.worldometers.info'
     # print(msg)
     return msg
 
 
+# function to list all country names
 def list_countries():
+    # initialize message
     msg = '{}{}\n'.format(emojize(':round_pushpin:', True), 'Countries:')
-    
+
+    # get the list of countries from manager.py file
     countries = manager.get_list_of_countries()
+
+    # traverse the list and get proper name of each country
     for i in range(len(countries)):
         country = get_proper_name(countries[i])
         msg += '\n{:>3}: {}'.format(i + 1, country)
-    
+
     msg += '\n\n{}{}'.format('Please choose /country and enter country\'s name', emojize(':point_down:', True))
     # print(msg)
     return msg
+
+print(get_country('kazakhstan'))
